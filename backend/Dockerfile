@@ -4,7 +4,7 @@ WORKDIR /usr/src/app
 
 COPY package*.json ./
 
-COPY server.js ./
+COPY backend/server.js ./
 
 RUN npm install
 
