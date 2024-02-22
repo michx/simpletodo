@@ -8,7 +8,7 @@ COPY backend/server.js ./
 
 RUN npm install
 
-COPY . .
+COPY backend/. .
 
 EXPOSE 3001
 
