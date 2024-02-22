@@ -1,0 +1,68 @@
+# Use    latest 2.1 version of CircleCI pipeline process engine.
+# See: https://circleci.com/docs/configuration-reference
+version: 2.1
+orbs:
+  slack: circleci/slack@4.10.1
+  bridgecrew: bridgecrew/bridgecrew@1.0.5
+
+
+
+
+jobs:
+  frontend:
+    docker:
+      - image: google/cloud-sdk:462.0.1
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run:
+          name: Build and Push application Docker image
+          command: |
+            TAG=0.1.$CIRCLE_BUILD_NUM
+            echo $GCLOUD_SERVICE_KEY | gcloud auth activate-service-account registry2@mdidedda.iam.gserviceaccount.com  --project=mdidedda --key-file=-
+            gcloud auth configure-docker europe-west1-docker.pkg.dev
+            docker build -t europe-west1-docker.pkg.dev/mdidedda/ecommerce/frontend:latest . -f frontend/Dockerfile
+            docker push europe-west1-docker.pkg.dev/mdidedda/ecommerce/frontend:latest
+      - slack/notify:
+          event: pass
+          template: success_tagged_deploy_1
+      - slack/notify:
+          event: fail
+          mentions: "Problems!"
+          template: basic_fail_1
+  backend:
+    docker:
+      - image: google/cloud-sdk:462.0.1
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run:
+          name: Build and Push application Docker image
+          command: |
+            TAG=0.1.$CIRCLE_BUILD_NUM
+            echo $GCLOUD_SERVICE_KEY | gcloud auth activate-service-account registry2@mdidedda.iam.gserviceaccount.com  --project=mdidedda --key-file=-
+            gcloud auth configure-docker europe-west1-docker.pkg.dev
+            docker build -t europe-west1-docker.pkg.dev/mdidedda/ecommerce/backend:latest . -f backend/Dockerfile
+            docker push europe-west1-docker.pkg.dev/mdidedda/ecommerce/backend:latest
+      - slack/notify:
+          event: pass
+          template: success_tagged_deploy_1
+      - slack/notify:
+          event: fail
+          mentions: "Problems!"
+          template: basic_fail_1
+  build:
+    executor: bridgecrew/default
+    steps:
+      - checkout
+      - bridgecrew/scan:
+          directory: .
+          api-key-variable: BC_API_KEY 
+          prisma-api-url: https://api.prismacloud.io
+
+workflows:
+  say-hello-workflow:
+    jobs:
+      - frontend
+      - backend
+      - build
